@@ -80,13 +80,13 @@ const RecruiterInterface: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-blue-200 flex flex-col">
+    <div className="min-h-screen bg-blue-100 flex flex-col text-black rounded-3xl p-8">
       {/* Navigation Bar */}
-      <nav className="bg-blue-200 p-4 flex items-center justify-between">
+      <nav className="bg-blue-200 p-4 flex items-center justify-between rounded-t-3xl">
         <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center mr-6">
-            <div className="w-6 h-6 rounded-full bg-white"></div>
-          </div>
+         
+        
+          
           <div className="flex gap-8">
             <button className="font-medium focus:outline-none">Home</button>
             <button className="font-medium focus:outline-none">Category</button>
@@ -103,25 +103,27 @@ const RecruiterInterface: React.FC = () => {
         <h1 className="text-3xl font-bold mb-8">Hello Recruiter</h1>
 
         {/* Upload & Search Section */}
-        <div className="bg-white shadow-md w-full max-w-lg rounded-lg p-6 flex flex-col items-center space-y-4">
+        <div className="bg-white shadow-md w-full max-w-lg rounded-t-3xl p-6 flex flex-col items-center space-y-4">
           {/* Resume Upload */}
-          <input
-            type="file"
-            accept=".pdf,.doc,.docx"
-            onChange={handleFileChange}
-            className="w-full text-sm"
-          />
-          {/* Display selected file */}
-          {file && (
-            <p className="text-sm text-gray-700">
-              📄 Selected: {file.name}
-            </p>
-          )}
+          <div className="bg-gray-200 p-6 w-full rounded-t-3xl flex flex-col items-center">
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileChange}
+              className="w-full text-sm"
+            />
+            {/* Display selected file */}
+            {file && (
+              <p className="text-sm text-gray-700">
+                📄 Selected: {file.name}
+              </p>
+            )}
+          </div>
 
           {/* Search Keywords Input */}
           <input
             type="text"
-            className="w-full p-2 border border-gray-300 rounded-md"
+            className="w-full p-2 border border-gray-400 rounded-md"
             placeholder="Enter job-related keywords (Optional)"
             value={searchQuery}
             onChange={handleSearchChange}

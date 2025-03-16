@@ -47,14 +47,12 @@ const ResumeUploadInterface = () => {
   if (!isClient) return null;
 
   return (
-    <div className="min-h-screen bg-blue-100 flex flex-col text-black">
+    <div className="min-h-screen bg-blue-100 flex flex-col text-black rounded-3xl p-8">
       {/* Header */}
-      <div className="bg-blue-200 p-4 flex justify-between items-center">
+      <div className="bg-blue-200 p-4 flex justify-between items-center rounded-t-3xl">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center">
-            <div className="w-6 h-6 rounded-full bg-blue"></div>
-          </div>
-          <div className="flex gap-6">
+           
+          <div className="flex gap-8">
             <button className="font-medium">Home</button>
             <button className="font-medium">Category</button>
             <button className="font-medium">Settings</button>
@@ -67,10 +65,10 @@ const ResumeUploadInterface = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center pt-10">
-        <h1 className="text-3xl font-bold mb-10">Welcome</h1>
+        <h1 className="text-3xl font-bold mb-10 pt-50">Welcome</h1>
 
         {/* File Upload */}
-        <div className="bg-white bg-opacity-80 w-full max-w-lg rounded-full px-6 py-4 flex items-center justify-between">
+        <div className="bg-white bg-opacity-80 w-full max-w-lg rounded-t-3xl px-6 py-4 flex items-center justify-between">
           <label htmlFor="file-upload" className="cursor-pointer">
             <input
               id="file-upload"
@@ -88,7 +86,7 @@ const ResumeUploadInterface = () => {
             onClick={handleUpload}
             disabled={!file || isUploading}
             className={`px-4 py-2 rounded-md ${
-              file ? "bg-black text-gray-100" : "bg-gray-400 text-gray-200"
+              file ? "bg-black text-gray-100" : "bg-gray-900 text-white"
             }`}
           >
             {isUploading ? "Uploading..." : "Upload"}
