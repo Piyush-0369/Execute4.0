@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import Link from "next/link";
+
 
 const RecruiterInterface: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
