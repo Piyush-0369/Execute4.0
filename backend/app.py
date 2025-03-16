@@ -57,8 +57,9 @@ def extract_text_from_file(file: UploadFile):
         return file.file.read().decode("utf-8")
 
     elif file_extension == "pdf":
-        pdf_reader = fitz.open(stream=file.file.read(), filetype="pdf")
-        text = "\n".join([page.get_text("text") for page in pdf_reader])
+        with fitz.open(stream=file.file.read(), filetype="pdf") as pdf_reader:
+            text = "\n".join([page.get_text("text") for page in pdf_reader])
+        print(f"Extracted PDF text: {text}")  # Log the extracted text
         return text if text.strip() else "Error: Could not extract text."
 
     elif file_extension == "docx":
@@ -90,25 +91,34 @@ async def analyze_resume_api(
     input_type: str = Form("full_description")
 ):
     try:
-        # Handle recruiter requests with job keywords only
-        if user_type == "recruiter" and job_input:
-            feedback = generate_resume_feedback("", user_type, job_input, input_type)
-            return feedback
-
         # Extract resume text if a file is uploaded
-        if resume:
-            resume_text = extract_text_from_file(resume)
-            if resume_text.startswith("Error:"):
-                return {"error": resume_text}
-
-            predicted_category = classify_resume(resume_text)
-            feedback = generate_resume_feedback(resume_text, user_type, job_input, input_type)
+        resume_text = ""
+        if user_type == "recruiter":
+            if resume:
+                resume_text = extract_text_from_file(resume)
+                print(f"Recruiter: Extracted PDF text: {resume_text}")  # Log for recruiter
+                print(f"Recruiter: Resume text passed to feedback: {resume_text}") # Log for recruiter
+                if resume_text.startswith("Error:"):
+                    return {"error": resume_text}
+                print(f"Recruiter: job_input: {job_input}")  # Log job_input
+                print(f"Recruiter: input_type: {input_type}") # Log input_type
+                feedback = generate_resume_feedback(resume_text, user_type, job_input, input_type)
+                predicted_category = classify_resume(resume_text) if resume_text else "Unknown"
+            else:
+                return {"error": "Resume file required for recruiter view"}
         else:
-            return {"error": "No resume provided."}
+            if resume:
+                resume_text = extract_text_from_file(resume)
+                if resume_text.startswith("Error:"):
+                    return {"error": resume_text}
+                predicted_category = classify_resume(resume_text)
+                feedback = generate_resume_feedback(resume_text, user_type, job_input, input_type)
+            else:
+                return {"error": "Resume file required for job seeker view"}
 
         return {
             "predicted_category": predicted_category,
-            "resume_feedback": feedback["resume_feedback"]
+            "resume_feedback": feedback["resume_feedback"] 
         }
 
     except Exception as e:
