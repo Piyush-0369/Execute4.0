@@ -28,7 +28,7 @@ const ResumeUploadInterface = () => {
     formData.append("resume", file);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/analyze_resume/", {
+      const res = await fetch("https://ai-vqeh.onrender.com/analyze_resume/", {
         method: "POST",
         body: formData,
       });
