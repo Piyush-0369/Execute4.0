@@ -59,10 +59,9 @@ const ResumeUploadInterface = () => {
             <button className="font-medium">Settings</button>
           </div>
         </div>
-         <Link href="/rec">
-        <button className="bg-black text-white px-4 py-2 rounded-full">
-        Are you a Recruiter?
-          </button>
+         <Link href="/rec" className="bg-black text-white px-4 py-2 rounded-full">
+         Are you a Recruiter?
+
         </Link>
 
 

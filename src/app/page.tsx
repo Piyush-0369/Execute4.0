@@ -1,7 +1,7 @@
-import ResumeScreening from "@/test";
+import ResumeUploadInterface from "./home";
 
 export default function Home() {
   return (
-    <ResumeScreening></ResumeScreening>
+    <ResumeUploadInterface></ResumeUploadInterface>
   );
 }
