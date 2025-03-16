@@ -71,10 +71,16 @@ const RecruiterInterface: React.FC = () => {
       } else {
         setSearchResults(data);
       }
-    } catch (error) {
-      console.error("❌ API Error:", error);
-      setErrorMessage(`❌ API request failed: ${error.message}`);
-    }
+    } } catch (error) {
+  console.error("❌ API Error:", error);
+  
+  if (error instanceof Error) {
+    setErrorMessage(`❌ API request failed: ${error.message}`);
+  } else {
+    setErrorMessage("❌ An unknown error occurred.");
+  }
+}
+
 
     setIsUploading(false);
   };
