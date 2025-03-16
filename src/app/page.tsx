@@ -1,7 +1,7 @@
-import RecruiterInterface from "./home";
+import ResumeScreening from "@/test";
 
 export default function Home() {
   return (
-    <RecruiterInterface></RecruiterInterface>
+    <ResumeScreening></ResumeScreening>
   );
 }
