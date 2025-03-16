@@ -2,14 +2,15 @@ import torch
 import pickle
 import json
 import os
+import fitz  # PyMuPDF for PDFs
+import docx
+import io
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from model.model import NeuralNet
 from utils.nltk_utils import preprocess_text
 from utils.gemini_feedback import generate_resume_feedback
 from sklearn.feature_extraction.text import TfidfVectorizer
-import PyPDF2
-import io
 
 app = FastAPI()
 
@@ -39,14 +40,34 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load trained model
 model = NeuralNet(input_size, hidden_size, output_size).to(device)
-model.load_state_dict(torch.load("resume_model.pth"))
+model.load_state_dict(torch.load("resume_model.pth", map_location=device))
 model.eval()
 
-# Function to extract text from PDF
-def extract_text_from_pdf(file: UploadFile):
-    pdf_reader = PyPDF2.PdfReader(io.BytesIO(file.file.read()))
-    text = "\n".join(page.extract_text() for page in pdf_reader.pages if page.extract_text())
-    return text
+# Function to truncate text to 500 words
+def truncate_text(text, max_words=500):
+    words = text.split()
+    return " ".join(words[:max_words]) + ("..." if len(words) > max_words else "")
+
+# Function to extract text from different file formats
+def extract_text_from_file(file: UploadFile):
+    """Extract text from PDF, DOCX, and TXT files."""
+    file_extension = file.filename.split(".")[-1].lower()
+
+    if file_extension == "txt":
+        return file.file.read().decode("utf-8")
+
+    elif file_extension == "pdf":
+        pdf_reader = fitz.open(stream=file.file.read(), filetype="pdf")
+        text = "\n".join([page.get_text("text") for page in pdf_reader])
+        return text if text.strip() else "Error: Could not extract text."
+
+    elif file_extension == "docx":
+        doc = docx.Document(io.BytesIO(file.file.read()))
+        text = "\n".join([para.text for para in doc.paragraphs])
+        return text if text.strip() else "Error: Could not extract text."
+
+    else:
+        return "Error: Unsupported file format."
 
 # Function to classify resumes
 def classify_resume(resume_text):
@@ -54,36 +75,41 @@ def classify_resume(resume_text):
     processed_text = " ".join(processed_text)
     vectorized_text = vectorizer.transform([processed_text]).toarray()
     input_tensor = torch.tensor(vectorized_text, dtype=torch.float32).to(device)
-    
+
     with torch.no_grad():
         output = model(input_tensor)
         _, predicted = torch.max(output, dim=1)
-    
+
     return categories[predicted.item()]
 
 @app.post("/analyze_resume/")
-async def analyze_resume(
-    resume: UploadFile = File(...), 
-    user_type: str = Form("job_seeker"), 
-    job_input: str = Form(None), 
+async def analyze_resume_api(
+    resume: UploadFile = File(None),
+    user_type: str = Form("job_seeker"),
+    job_input: str = Form(None),
     input_type: str = Form("full_description")
 ):
-    if resume.filename.endswith(".pdf"):
-        resume_text = extract_text_from_pdf(resume)
-    else:
-        resume_text = (await resume.read()).decode("utf-8")
+    try:
+        # Handle recruiter requests with job keywords only
+        if user_type == "recruiter" and job_input:
+            feedback = generate_resume_feedback("", user_type, job_input, input_type)
+            return feedback
 
-    predicted_category = classify_resume(resume_text)
-    feedback = generate_resume_feedback(resume_text, user_type, job_input, input_type)
+        # Extract resume text if a file is uploaded
+        if resume:
+            resume_text = extract_text_from_file(resume)
+            if resume_text.startswith("Error:"):
+                return {"error": resume_text}
 
-    # Convert feedback into a structured array
-    formatted_feedback = [
-        {"type": "issue" if "**Issue:**" in line else "recommendation" if "**Recommendation:**" in line else "general",
-         "content": line.strip().replace("**Issue:**", "").replace("**Recommendation:**", "")}
-        for line in feedback.split("\n") if line.strip()
-    ]
-    
-    return {
-        "predicted_category": f"🎯 Job Category: {predicted_category}",
-        "resume_feedback": formatted_feedback  # Now it's an array
-    }
+            predicted_category = classify_resume(resume_text)
+            feedback = generate_resume_feedback(resume_text, user_type, job_input, input_type)
+        else:
+            return {"error": "No resume provided."}
+
+        return {
+            "predicted_category": predicted_category,
+            "resume_feedback": feedback["resume_feedback"]
+        }
+
+    except Exception as e:
+        return {"error": f"Failed to process resume: {str(e)}"}

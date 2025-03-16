@@ -1,94 +1,163 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
-
 const RecruiterInterface: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [searchResults, setSearchResults] = useState<{ query: string; results: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [searchResults, setSearchResults] = useState<
+    { resume_feedback: { type: string; content: string }[] } | null
+  >(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [userType, setUserType] = useState<string>("recruiter"); // Default to recruiter
 
+  // Automatically set user type to "recruiter" when on this page
+  useEffect(() => {
+    setUserType("recruiter");
+    console.log("✅ UserType set to Recruiter for Gemini AI feedback");
+  }, []);
+
+  // Handle text input for job keywords
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
-  const handleSummarize = () => {
-    if (!searchQuery.trim()) return;
+  // Handle resume file upload
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+    }
+  };
 
-    setIsSearching(true);
+  // Handle AI-based resume analysis
+  const handleAnalyzeResume = async () => {
+    if (!file) {
+      setErrorMessage("❌ Please upload a resume before searching.");
+      return;
+    }
 
-    setTimeout(() => {
-      setIsSearching(false);
-      setSearchResults({
-        query: searchQuery,
-        results: `Summary for "${searchQuery}" query`,
+    setIsUploading(true);
+    setSearchResults(null);
+    setErrorMessage(null);
+
+    const formData = new FormData();
+    formData.append("resume", file);
+    formData.append("user_type", userType); // Ensures user_type is always recruiter
+    formData.append("mode", "ai"); // Explicitly set AI mode
+
+    if (searchQuery.trim()) {
+      formData.append("job_input", searchQuery);
+      formData.append("input_type", "keywords");
+    }
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/analyze_resume/", {
+        method: "POST",
+        body: formData,
       });
-    }, 1000);
+
+      const textResponse = await response.text(); // Read response as text first
+      console.log("Raw API Response:", textResponse); // Debugging
+
+      if (!response.ok) {
+        throw new Error(`Server Error: ${response.status}`);
+      }
+
+      const data = JSON.parse(textResponse); // Ensure JSON is properly parsed
+      if (!data || data.error) {
+        setErrorMessage(`❌ AI Error: ${data?.error || "Unknown error"}`);
+      } else {
+        setSearchResults(data);
+      }
+    } catch (error) {
+      console.error("❌ API Error:", error);
+      setErrorMessage(`❌ API request failed: ${error.message}`);
+    }
+
+    setIsUploading(false);
   };
 
   return (
     <div className="min-h-screen bg-blue-200 flex flex-col">
       {/* Navigation Bar */}
-      <nav className="bg-blue-200 p-4 flex items-center">
-        <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center mr-6">
-          <div className="w-6 h-6 rounded-full bg-white"></div>
+      <nav className="bg-blue-200 p-4 flex items-center justify-between">
+        <div className="flex items-center">
+          <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center mr-6">
+            <div className="w-6 h-6 rounded-full bg-white"></div>
+          </div>
+          <div className="flex gap-8">
+            <button className="font-medium focus:outline-none">Home</button>
+            <button className="font-medium focus:outline-none">Category</button>
+            <button className="font-medium focus:outline-none">Settings</button>
+          </div>
         </div>
-
-        <div className="flex gap-8">
-          <button className="font-medium focus:outline-none">Home</button>
-          <button className="font-medium focus:outline-none">Category</button>
-          <button className="font-medium focus:outline-none">Settings</button>
-        </div>
+        <Link href="/" className="bg-black text-white px-4 py-2 rounded-full">
+          Back to Job Seeker
+        </Link>
       </nav>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center pb-32">
-        <h1 className="text-3xl font-bold mb-24">Hello Recruiter</h1>
+        <h1 className="text-3xl font-bold mb-8">Hello Recruiter</h1>
 
-        {/* Search Bar */}
-        <div className="bg-gray-50 bg-opacity-80 w-full max-w-lg rounded-full px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1">
-            {/* Upload Icon */}
-            <div className="w-6 h-6">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-            </div>
+        {/* Upload & Search Section */}
+        <div className="bg-white shadow-md w-full max-w-lg rounded-lg p-6 flex flex-col items-center space-y-4">
+          {/* Resume Upload */}
+          <input
+            type="file"
+            accept=".pdf,.doc,.docx"
+            onChange={handleFileChange}
+            className="w-full text-sm"
+          />
+          {/* Display selected file */}
+          {file && (
+            <p className="text-sm text-gray-700">
+              📄 Selected: {file.name}
+            </p>
+          )}
 
-            {/* Search Input */}
-            <input
-              type="text"
-              className="bg-transparent flex-1 outline-none text-gray-600 placeholder-gray-500"
-              placeholder="What are you looking for?"
-              value={searchQuery}
-              onChange={handleSearchChange}
-            />
-          </div>
+          {/* Search Keywords Input */}
+          <input
+            type="text"
+            className="w-full p-2 border border-gray-300 rounded-md"
+            placeholder="Enter job-related keywords (Optional)"
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
 
-          {/* Summarize Button */}
+          {/* Search Button */}
           <button
-            onClick={handleSummarize}
-            disabled={isSearching || !searchQuery.trim()}
-            className={`px-4 py-2 rounded-md text-sm ${
-              isSearching || !searchQuery.trim() ? 'bg-gray-500 cursor-not-allowed' : 'bg-gray-800 text-white'
-            }`}
+            onClick={handleAnalyzeResume}
+            className="bg-gray-800 text-white px-4 py-2 rounded-md w-full"
+            disabled={isUploading}
           >
-            {isSearching ? 'Searching...' : 'Summarize'}
+            {isUploading ? "Processing..." : "Find Candidates"}
           </button>
         </div>
 
-        {/* Search Results */}
+        {/* Error Message */}
+        {errorMessage && (
+          <p className="mt-4 text-red-600 bg-white p-3 rounded-md shadow-md">
+            {errorMessage}
+          </p>
+        )}
+
+        {/* AI Feedback Results */}
         {searchResults && (
           <div className="mt-6 p-4 bg-white rounded-lg shadow-md w-full max-w-lg">
-            <h3 className="font-bold">Search Results</h3>
-            <p>{searchResults.results}</p>
+            <h2 className="text-lg font-bold">🔍 Results:</h2>
+
+            <h3 className="mt-2 font-semibold">💡 AI Feedback:</h3>
+            <ul className="list-disc pl-5 text-gray-700">
+              {searchResults.resume_feedback.map((item, index) => (
+                <li key={index} className="mb-1">
+                  <span className="font-bold text-green-700">{item.type}: </span>
+                  {item.content}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
