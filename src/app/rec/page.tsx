@@ -71,7 +71,7 @@ const RecruiterInterface: React.FC = () => {
       } else {
         setSearchResults(data);
       }
-    } } catch (error) {
+    }  catch (error) {
   console.error("❌ API Error:", error);
   
   if (error instanceof Error) {
